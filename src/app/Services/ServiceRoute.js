@@ -32,7 +32,7 @@ const serviceUploadFields = upload.fields([
 
 // Routes
 serviceRoute.get("/servicedata", getServiceData);
-serviceRoute.get("/services/:slug", getSingleServiceData); // slug based detail
+serviceRoute.get("/services/:slug", getSingleServiceData);
 serviceRoute.post("/createservicedata", serviceUploadFields, createServiceData);
 serviceRoute.put("/service/:id", serviceUploadFields, updateServiceData);
 serviceRoute.delete("/service/:id", deleteServiceData);

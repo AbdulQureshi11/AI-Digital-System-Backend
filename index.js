@@ -39,11 +39,11 @@ app.use('/api/auth', authRoute);
 
 db.sequelize.sync({ alter: true })
     .then(async () => {
-        // default user create
         await createDefaultUser();
 
-        app.listen(port, () => {
-            console.log(`Server running on http://localhost:${port}`);
+        app.listen(port, "0.0.0.0", () => {
+            console.log(` Server running on http://localhost:${port}`);
+            console.log(`Accessible on LAN at http://192.168.1.6:${port}`);
         });
     })
     .catch((err) => console.error(' Database Connection Error:', err));

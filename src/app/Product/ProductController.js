@@ -1,13 +1,16 @@
-// ProductController.js
+// src/app/Product/ProductController.js
 import db from "../../Config/models.js";
 
 const Product = db.Product;
 
-const getImageUrl = (req, file) => {
-    return file ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}` : null;
+const getImageUrl = (file) => {
+    if (!file) return null;
+    const host = "192.168.1.6";
+    const port = 9000;
+    return `http://${host}:${port}/uploads/${file.filename}`;
 };
 
-// GET ALL 
+// GET ALL
 export const getProductData = async (req, res) => {
     try {
         const products = await Product.findAll({ order: [["id", "DESC"]] });
@@ -17,11 +20,12 @@ export const getProductData = async (req, res) => {
     }
 };
 
-// CREATE 
+// CREATE
 export const createProductData = async (req, res) => {
     try {
         const { name, slug, dis, detail, bullets, whyChoose, shortDesc, buttonText } = req.body;
-        const image = getImageUrl(req, req.file);
+
+        const image = getImageUrl(req.file);
 
         const product = await Product.create({
             name,
@@ -53,7 +57,7 @@ export const getSingleProductData = async (req, res) => {
     }
 };
 
-// GET SINGLE (by Slug) 
+// GET SINGLE (by Slug)
 export const getProductBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
@@ -74,11 +78,10 @@ export const updateProductData = async (req, res) => {
         const updateData = { name, slug, dis, detail, bullets, whyChoose, shortDesc, buttonText };
 
         if (req.file) {
-            updateData.image = getImageUrl(req, req.file);
+            updateData.image = getImageUrl(req.file);
         }
 
         const [updated] = await Product.update(updateData, { where: { id } });
-
         if (!updated) return res.status(404).json({ message: "Product not found" });
 
         const fresh = await Product.findByPk(id);

@@ -6,9 +6,13 @@ const About = db.About;
 const getFileUrl = (req, fieldName) => {
     if (!req.files) return null;
     const file = req.files.find((f) => f.fieldname === fieldName);
-    return file
-        ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-        : null;
+    if (!file) return null;
+
+
+    const host = "192.168.1.6";
+    const port = 9000;
+
+    return `http://${host}:${port}/uploads/${file.filename}`;
 };
 
 // Get All

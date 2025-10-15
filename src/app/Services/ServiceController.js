@@ -1,6 +1,17 @@
-// src/app/Services/ServiceController.js
 import db from "../../Config/models.js";
 const Service = db.Service;
+
+
+const getFileUrl = (req, fileArrayName) => {
+    if (!req.files) return null;
+    const file = req.files[fileArrayName]?.[0];
+    if (!file) return null;
+
+    const host = "192.168.1.6";
+    const port = 9000;
+
+    return `http://${host}:${port}/uploads/${file.filename}`;
+};
 
 // Get all services
 export const getServiceData = async (req, res) => {
@@ -12,7 +23,7 @@ export const getServiceData = async (req, res) => {
     }
 };
 
-//Get Single Service
+// Get Single Service
 export const getSingleServiceData = async (req, res) => {
     try {
         const { slug } = req.params;
@@ -24,27 +35,19 @@ export const getSingleServiceData = async (req, res) => {
     }
 };
 
-// Create service
+// Create Service
 export const createServiceData = async (req, res) => {
     try {
         const { name, slug, detail, head, whyChoose } = req.body;
 
-        const icon = req.files?.icon
-            ? `${req.protocol}://${req.get("host")}/uploads/${req.files.icon[0].filename}`
-            : null;
-
-        const image = req.files?.image
-            ? `${req.protocol}://${req.get("host")}/uploads/${req.files.image[0].filename}`
-            : null;
-
         const newService = await Service.create({
             name,
             slug,
-            icon,
-            image,
             detail,
             head,
             whyChoose,
+            icon: getFileUrl(req, "icon"),
+            image: getFileUrl(req, "image"),
         });
 
         res.json(newService);
@@ -53,7 +56,7 @@ export const createServiceData = async (req, res) => {
     }
 };
 
-// Update service
+// Update Service
 export const updateServiceData = async (req, res) => {
     try {
         const { id } = req.params;
@@ -61,12 +64,12 @@ export const updateServiceData = async (req, res) => {
 
         const updateFields = { name, slug, detail, head, whyChoose };
 
-        if (req.files?.icon) {
-            updateFields.icon = `${req.protocol}://${req.get("host")}/uploads/${req.files.icon[0].filename}`;
-        }
-        if (req.files?.image) {
-            updateFields.image = `${req.protocol}://${req.get("host")}/uploads/${req.files.image[0].filename}`;
-        }
+        // Update images if uploaded
+        const iconUrl = getFileUrl(req, "icon");
+        if (iconUrl) updateFields.icon = iconUrl;
+
+        const imageUrl = getFileUrl(req, "image");
+        if (imageUrl) updateFields.image = imageUrl;
 
         const [updated] = await Service.update(updateFields, { where: { id } });
         if (!updated) return res.status(404).json({ message: "Not Found" });
@@ -78,7 +81,7 @@ export const updateServiceData = async (req, res) => {
     }
 };
 
-// Delete service
+// Delete Service
 export const deleteServiceData = async (req, res) => {
     try {
         const { id } = req.params;
