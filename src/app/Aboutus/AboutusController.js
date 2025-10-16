@@ -1,27 +1,45 @@
-// src/app/Aboutus/AboutusController.js
 import db from "../../Config/models.js";
-
 const About = db.About;
+
+const getServerBaseURL = (req) => {
+    const protocol = req.protocol;
+    const host = req.get("host");
+    return `${protocol}://${host}`;
+};
 
 const getFileUrl = (req, fieldName) => {
     if (!req.files) return null;
-    const file = req.files.find((f) => f.fieldname === fieldName);
+
+    const file =
+        Array.isArray(req.files) && req.files.length > 0
+            ? req.files.find((f) => f.fieldname === fieldName)
+            : req.files[fieldName]?.[0];
+
     if (!file) return null;
-
-
-    const host = "192.168.1.6";
-    const port = 9000;
-
-    return `http://${host}:${port}/uploads/${file.filename}`;
+    const baseURL = getServerBaseURL(req);
+    return `${baseURL}/uploads/${file.filename}`;
 };
 
 // Get All
 export const getAboutData = async (req, res) => {
     try {
-        const data = await About.findAll();
-        res.json(data);
+        const abouts = await About.findAll({ order: [["id", "DESC"]] });
+        res.json(abouts);
     } catch (error) {
-        console.error("GET ALL ERROR:", error);
+        console.error("GET ABOUT ERROR:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Get Single
+export const getSingleAboutData = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const about = await About.findByPk(id);
+        if (!about) return res.status(404).json({ message: "Not Found" });
+        res.json(about);
+    } catch (error) {
+        console.error("GET SINGLE ABOUT ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -29,13 +47,9 @@ export const getAboutData = async (req, res) => {
 // Create
 export const createAboutData = async (req, res) => {
     try {
-        console.log("BODY:", req.body);
-        console.log("FILES:", req.files);
+        const { title, description, bottomText1, bottomText2, buttonText } = req.body;
 
-        const { title, description, bottomText1, bottomText2, buttonText } =
-            req.body;
-
-        const newData = await About.create({
+        const about = await About.create({
             title,
             description,
             bottomText1,
@@ -48,22 +62,9 @@ export const createAboutData = async (req, res) => {
             bottomImage2: getFileUrl(req, "bottomImage2"),
         });
 
-        res.json(newData);
+        res.status(201).json(about);
     } catch (error) {
-        console.error("CREATE ERROR:", error);
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Get Single
-export const getSingleAboutData = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const data = await About.findByPk(id);
-        if (!data) return res.status(404).json({ message: "Not Found" });
-        res.json(data);
-    } catch (error) {
-        console.error("GET SINGLE ERROR:", error);
+        console.error("CREATE ABOUT ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -72,11 +73,7 @@ export const getSingleAboutData = async (req, res) => {
 export const updateAboutData = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("BODY:", req.body);
-        console.log("FILES:", req.files);
-
-        const { title, description, bottomText1, bottomText2, buttonText } =
-            req.body;
+        const { title, description, bottomText1, bottomText2, buttonText } = req.body;
 
         const updateFields = {
             title,
@@ -86,13 +83,7 @@ export const updateAboutData = async (req, res) => {
             buttonText,
         };
 
-        const fileFields = [
-            "topImage1",
-            "topImage2",
-            "movingImage",
-            "bottomImage1",
-            "bottomImage2",
-        ];
+        const fileFields = ["topImage1", "topImage2", "movingImage", "bottomImage1", "bottomImage2"];
         fileFields.forEach((field) => {
             const url = getFileUrl(req, field);
             if (url) updateFields[field] = url;
@@ -104,7 +95,7 @@ export const updateAboutData = async (req, res) => {
         const updatedData = await About.findByPk(id);
         res.json(updatedData);
     } catch (error) {
-        console.error("UPDATE ERROR:", error);
+        console.error("UPDATE ABOUT ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -117,7 +108,7 @@ export const deleteAboutData = async (req, res) => {
         if (!deleted) return res.status(404).json({ message: "Not Found" });
         res.json({ message: "Deleted Successfully" });
     } catch (error) {
-        console.error("DELETE ERROR:", error);
+        console.error("DELETE ABOUT ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };

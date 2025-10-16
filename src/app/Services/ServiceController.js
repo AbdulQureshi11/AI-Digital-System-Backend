@@ -1,46 +1,55 @@
 import db from "../../Config/models.js";
 const Service = db.Service;
 
-
-const getFileUrl = (req, fileArrayName) => {
-    if (!req.files) return null;
-    const file = req.files[fileArrayName]?.[0];
-    if (!file) return null;
-
-    const host = "192.168.1.6";
-    const port = 9000;
-
-    return `http://${host}:${port}/uploads/${file.filename}`;
+const getServerBaseURL = (req) => {
+    const protocol = req.protocol;
+    const host = req.get("host");
+    return `${protocol}://${host}`;
 };
 
-// Get all services
+const getFileUrl = (req, fieldName) => {
+    if (!req.files) return null;
+
+    const file =
+        Array.isArray(req.files) && req.files.length > 0
+            ? req.files.find((f) => f.fieldname === fieldName)
+            : req.files[fieldName]?.[0];
+
+    if (!file) return null;
+    const baseURL = getServerBaseURL(req);
+    return `${baseURL}/uploads/${file.filename}`;
+};
+
+// Get All
 export const getServiceData = async (req, res) => {
     try {
-        const services = await Service.findAll();
+        const services = await Service.findAll({ order: [["id", "DESC"]] });
         res.json(services);
     } catch (error) {
+        console.error("GET ALL SERVICES ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-// Get Single Service
+// Get Single
 export const getSingleServiceData = async (req, res) => {
     try {
         const { slug } = req.params;
         const service = await Service.findOne({ where: { slug } });
-        if (!service) return res.status(404).json({ message: "Not Found" });
+        if (!service) return res.status(404).json({ message: "Service not found" });
         res.json(service);
     } catch (error) {
+        console.error("GET SINGLE SERVICE ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-// Create Service
+// Create
 export const createServiceData = async (req, res) => {
     try {
         const { name, slug, detail, head, whyChoose } = req.body;
 
-        const newService = await Service.create({
+        const service = await Service.create({
             name,
             slug,
             detail,
@@ -50,45 +59,47 @@ export const createServiceData = async (req, res) => {
             image: getFileUrl(req, "image"),
         });
 
-        res.json(newService);
+        res.status(201).json(service);
     } catch (error) {
+        console.error("CREATE SERVICE ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-// Update Service
+// Update
 export const updateServiceData = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, slug, detail, head, whyChoose } = req.body;
 
-        const updateFields = { name, slug, detail, head, whyChoose };
+        const updateData = { name, slug, detail, head, whyChoose };
 
-        // Update images if uploaded
         const iconUrl = getFileUrl(req, "icon");
-        if (iconUrl) updateFields.icon = iconUrl;
-
         const imageUrl = getFileUrl(req, "image");
-        if (imageUrl) updateFields.image = imageUrl;
 
-        const [updated] = await Service.update(updateFields, { where: { id } });
-        if (!updated) return res.status(404).json({ message: "Not Found" });
+        if (iconUrl) updateData.icon = iconUrl;
+        if (imageUrl) updateData.image = imageUrl;
 
-        const updatedService = await Service.findByPk(id);
-        res.json(updatedService);
+        const [updated] = await Service.update(updateData, { where: { id } });
+        if (!updated) return res.status(404).json({ message: "Service not found" });
+
+        const fresh = await Service.findByPk(id);
+        res.json(fresh);
     } catch (error) {
+        console.error("UPDATE SERVICE ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-// Delete Service
+// Delete
 export const deleteServiceData = async (req, res) => {
     try {
         const { id } = req.params;
         const deleted = await Service.destroy({ where: { id } });
-        if (!deleted) return res.status(404).json({ message: "Not Found" });
-        res.json({ message: "Deleted Successfully" });
+        if (!deleted) return res.status(404).json({ message: "Service not found" });
+        res.json({ message: "Service deleted successfully" });
     } catch (error) {
+        console.error("DELETE SERVICE ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
